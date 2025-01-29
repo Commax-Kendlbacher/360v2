@@ -7,8 +7,6 @@ let isCalibrated = false;
 let quaternion = new THREE.Quaternion(); // Quaternion für Rotation
 let smoothQuaternion = new THREE.Quaternion(); // Geglättete Rotation
 
-let orientationMode = 'portrait'; // 'portrait' oder 'landscape'
-
 // Funktion zur Quaternion-Glättung
 function applyQuaternionSmoothing(current, target, smoothingFactor = 0.1) {
     return current.slerp(target, smoothingFactor); // Smoother Übergang
@@ -33,25 +31,10 @@ function handleOrientation(event) {
 
     let yaw, pitch, roll;
 
-    if (orientationMode === 'portrait') {
-        yaw = THREE.MathUtils.degToRad((event.alpha || 0) - initialAlpha);
-        pitch = THREE.MathUtils.degToRad((event.beta || 0) - initialBeta) * -1; // Invertiere Pitch
-        roll = THREE.MathUtils.degToRad((event.gamma || 0) - initialGamma);
-
-        if (event.beta > 90) {
-            pitch = Math.PI - pitch; // Passe Pitch an, wenn das Gerät auf dem Kopf ist
-            yaw += Math.PI; // Passe Yaw entsprechend an
-        }
-    } else {
-        yaw = THREE.MathUtils.degToRad((event.alpha || 0) - initialAlpha);
-        pitch = THREE.MathUtils.degToRad((event.gamma || 0) - initialGamma) * -1; // Invertiere Pitch
-        roll = THREE.MathUtils.degToRad((event.beta || 0) - initialBeta);
-
-        if (event.gamma > 90) {
-            pitch = Math.PI - pitch;
-            yaw += Math.PI;
-        }
-    }
+    // Querformat-Berechnung
+    yaw = THREE.MathUtils.degToRad((event.alpha || 0) - initialAlpha);
+    pitch = THREE.MathUtils.degToRad((event.gamma || 0) - initialGamma) * -1; // Invertiere Pitch
+    roll = THREE.MathUtils.degToRad((event.beta || 0) - initialBeta);
 
     // Begrenze Pitch (Hoch-/Runterschauen)
     const maxPitch = Math.PI / 2 - 0.2; // Obergrenze
@@ -106,13 +89,13 @@ window.addEventListener('resize', () => {
 });
 
 document.getElementById('startButton').addEventListener('click', () => {
-    if (window.innerWidth > window.innerHeight) {
-        orientationMode = 'landscape'; // Querformat
-    } else {
-        orientationMode = 'portrait'; // Hochformat
+    // Nur Querformat unterstützen
+    if (window.innerWidth <= window.innerHeight) {
+        alert('Bitte legen Sie Ihr Gerät ins Querformat, um fortzufahren.');
+        return;
     }
 
-    console.log(`Orientation detected: ${orientationMode}`);
+    console.log(`Querformat erkannt`);
 
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission()
@@ -132,4 +115,3 @@ document.getElementById('startButton').addEventListener('click', () => {
         document.getElementById('startButton').style.display = 'none';
     }
 });
-    
