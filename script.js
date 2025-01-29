@@ -37,11 +37,15 @@ function handleOrientation(event) {
     roll = THREE.MathUtils.degToRad((event.beta || 0) - initialBeta);
 
     // Begrenze Pitch (Hoch-/Runterschauen)
-    const maxPitch = Math.PI / 2 - 0.2; // Obergrenze
-    const minPitch = -Math.PI / 2 + 0.2; // Untergrenze
+    const maxPitch = Math.PI / 2 - 0.1; // Obergrenze (fast 90°)
+    const minPitch = -Math.PI / 2 + 0.1; // Untergrenze (fast -90°)
 
-    // Symmetrische Bewegung: Pitch für Hoch- und Runterschauen begrenzen
-    pitch = Math.max(minPitch, Math.min(maxPitch, pitch));
+    // Symmetrische Bewegung: Pitch begrenzen und stabilisieren
+    if (pitch > maxPitch) {
+        pitch = maxPitch;
+    } else if (pitch < minPitch) {
+        pitch = minPitch;
+    }
 
     // Debugging: Überprüfe die berechneten Werte
     debugOrientation(yaw, pitch, roll);
