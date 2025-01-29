@@ -36,15 +36,15 @@ function handleOrientation(event) {
     pitch = THREE.MathUtils.degToRad((event.gamma || 0) - initialGamma) * -1; // Invertiere Pitch
     roll = THREE.MathUtils.degToRad((event.beta || 0) - initialBeta);
 
-    // Begrenze Pitch (Hoch-/Runterschauen) dynamisch
-    const maxPitch = Math.PI / 2 - 0.15; // Obergrenze (leicht unter 90°)
-    const minPitch = -Math.PI / 2 + 0.15; // Untergrenze (leicht über -90°)
+    // Begrenze Pitch (Hoch-/Runterschauen)
+    const maxPitch = Math.PI / 2 - 0.1; // Obergrenze (fast 90°)
+    const minPitch = -Math.PI / 2 + 0.1; // Untergrenze (fast -90°)
 
-    // Weiche Begrenzung: Annäherung an die Grenzen
+    // Harte Begrenzung: Pitch exakt in Grenzen halten
     if (pitch > maxPitch) {
-        pitch = THREE.MathUtils.lerp(pitch, maxPitch, 0.2); // Näherung an Obergrenze
+        pitch = maxPitch;
     } else if (pitch < minPitch) {
-        pitch = THREE.MathUtils.lerp(pitch, minPitch, 0.2); // Näherung an Untergrenze
+        pitch = minPitch;
     }
 
     // Debugging: Überprüfe die berechneten Werte
