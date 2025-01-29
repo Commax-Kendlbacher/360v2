@@ -15,7 +15,7 @@ function applyQuaternionSmoothing(current, target, smoothingFactor = 0.1) {
 // Debugging-Funktion
 function debugOrientation(yaw, pitch, roll) {
     console.log(`Yaw: ${yaw.toFixed(2)} rad`);
-    console.log(`Pitch: ${pitch.toFixed(2)} rad (raw)`);
+    console.log(`Pitch: ${pitch.toFixed(2)} rad`);
     console.log(`Roll: ${roll.toFixed(2)} rad`);
 }
 
@@ -36,15 +36,15 @@ function handleOrientation(event) {
     pitch = THREE.MathUtils.degToRad((event.gamma || 0) - initialGamma) * -1; // Invertiere Pitch
     roll = THREE.MathUtils.degToRad((event.beta || 0) - initialBeta);
 
-    // Begrenze Pitch (Hoch-/Runterschauen)
-    const maxPitch = Math.PI / 2 - 0.1; // Obergrenze (fast 90°)
-    const minPitch = -Math.PI / 2 + 0.1; // Untergrenze (fast -90°)
+    // Begrenze Pitch (Hoch-/Runterschauen) dynamisch
+    const maxPitch = Math.PI / 2 - 0.15; // Obergrenze (leicht unter 90°)
+    const minPitch = -Math.PI / 2 + 0.15; // Untergrenze (leicht über -90°)
 
-    // Symmetrische Bewegung: Pitch begrenzen und stabilisieren
+    // Weiche Begrenzung: Annäherung an die Grenzen
     if (pitch > maxPitch) {
-        pitch = maxPitch;
+        pitch = THREE.MathUtils.lerp(pitch, maxPitch, 0.2); // Näherung an Obergrenze
     } else if (pitch < minPitch) {
-        pitch = minPitch;
+        pitch = THREE.MathUtils.lerp(pitch, minPitch, 0.2); // Näherung an Untergrenze
     }
 
     // Debugging: Überprüfe die berechneten Werte
