@@ -1,58 +1,62 @@
 import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js';
 
 let scene, camera, renderer;
-let initialAlpha = 0, initialBeta = 0, initialGamma = 0;
 let isCalibrated = false;
-
-let quaternion = new THREE.Quaternion(); // Quaternion für Rotation
-let smoothQuaternion = new THREE.Quaternion(); // Geglättete Rotation
+let initialQuaternion = new THREE.Quaternion();
+let smoothQuaternion = new THREE.Quaternion();
 
 // Funktion zur Quaternion-Glättung
 function applyQuaternionSmoothing(current, target, smoothingFactor = 0.1) {
-    return current.slerp(target, smoothingFactor); // Smoother Übergang
+    return current.slerp(target, smoothingFactor);
 }
 
 // Debugging-Funktion
-function debugOrientation(yaw, pitch, roll) {
-    console.log(`Yaw: ${yaw.toFixed(2)} rad`);
+function debugOrientation(pitch) {
     console.log(`Pitch: ${pitch.toFixed(2)} rad`);
-    console.log(`Roll: ${roll.toFixed(2)} rad`);
 }
 
 function handleOrientation(event) {
     if (!isCalibrated) {
-        // Kalibrierung der Startwerte
-        initialAlpha = event.alpha || 0;
-        initialBeta = event.beta || 0;
-        initialGamma = event.gamma || 0;
+        // Initiale Quaternion basierend auf Sensorwerten setzen
+        const initialEuler = new THREE.Euler(
+            THREE.MathUtils.degToRad(event.beta || 0),
+            THREE.MathUtils.degToRad(event.alpha || 0),
+            THREE.MathUtils.degToRad(event.gamma || 0),
+            'YXZ'
+        );
+        initialQuaternion.setFromEuler(initialEuler);
         isCalibrated = true;
-        console.log(`Calibration complete: Alpha=${initialAlpha}, Beta=${initialBeta}, Gamma=${initialGamma}`);
+        console.log('Calibration complete.');
     }
 
-    let yaw, pitch, roll;
+    // Aktuelle Quaternion aus den Sensorwerten berechnen
+    const currentEuler = new THREE.Euler(
+        THREE.MathUtils.degToRad(event.beta || 0),
+        THREE.MathUtils.degToRad(event.alpha || 0),
+        THREE.MathUtils.degToRad(event.gamma || 0),
+        'YXZ'
+    );
+    const currentQuaternion = new THREE.Quaternion().setFromEuler(currentEuler);
 
-    // Querformat-Berechnung
-    yaw = THREE.MathUtils.degToRad((event.alpha || 0) - initialAlpha);
-    pitch = THREE.MathUtils.degToRad((event.gamma || 0) - initialGamma) * -1; // Invertiere Pitch
-    roll = THREE.MathUtils.degToRad((event.beta || 0) - initialBeta);
+    // Relativer Quaternion-Wert
+    const relativeQuaternion = initialQuaternion.clone().invert().multiply(currentQuaternion);
 
-    // Begrenze Pitch (Hoch-/Runterschauen)
+    // Euler-Winkel aus relativer Quaternion extrahieren
+    const relativeEuler = new THREE.Euler().setFromQuaternion(relativeQuaternion, 'YXZ');
+
+    // Stabilisiere Pitch
     const maxPitch = Math.PI / 2 - 0.1; // Obergrenze (fast 90°)
     const minPitch = -Math.PI / 2 + 0.1; // Untergrenze (fast -90°)
+    const pitch = Math.max(minPitch, Math.min(maxPitch, relativeEuler.x)); // Pitch begrenzen
 
-    // Harte Begrenzung: Pitch exakt in Grenzen halten
-    if (pitch > maxPitch) {
-        pitch = maxPitch;
-    } else if (pitch < minPitch) {
-        pitch = minPitch;
-    }
+    // Debugging: Überprüfe Pitch-Wert
+    debugOrientation(pitch);
 
-    // Debugging: Überprüfe die berechneten Werte
-    debugOrientation(yaw, pitch, roll);
-
-    // Quaternion für Kamera setzen
-    quaternion.setFromEuler(new THREE.Euler(pitch, yaw, -roll, 'YXZ'));
-    smoothQuaternion = applyQuaternionSmoothing(smoothQuaternion, quaternion);
+    // Aktualisiere Kamera-Quaternion
+    const stabilizedQuaternion = new THREE.Quaternion().setFromEuler(
+        new THREE.Euler(pitch, relativeEuler.y, relativeEuler.z, 'YXZ')
+    );
+    smoothQuaternion = applyQuaternionSmoothing(smoothQuaternion, stabilizedQuaternion);
     camera.quaternion.copy(smoothQuaternion);
 }
 
@@ -93,13 +97,12 @@ window.addEventListener('resize', () => {
 });
 
 document.getElementById('startButton').addEventListener('click', () => {
-    // Nur Querformat unterstützen
     if (window.innerWidth <= window.innerHeight) {
         alert('Bitte legen Sie Ihr Gerät ins Querformat, um fortzufahren.');
         return;
     }
 
-    console.log(`Querformat erkannt`);
+    console.log('Querformat erkannt.');
 
     if (typeof DeviceMotionEvent.requestPermission === 'function') {
         DeviceMotionEvent.requestPermission()
