@@ -16,7 +16,9 @@ function applyQuaternionSmoothing(current, target, smoothingFactor = 0.1) {
 
 // Debugging-Funktion
 function debugOrientation(yaw, pitch, roll) {
-    console.log(`Yaw: ${yaw.toFixed(2)} rad, Pitch: ${pitch.toFixed(2)} rad, Roll: ${roll.toFixed(2)} rad`);
+    console.log(`Yaw: ${yaw.toFixed(2)} rad`);
+    console.log(`Pitch: ${pitch.toFixed(2)} rad (raw)`);
+    console.log(`Roll: ${roll.toFixed(2)} rad`);
 }
 
 function handleOrientation(event) {
@@ -26,6 +28,7 @@ function handleOrientation(event) {
         initialBeta = event.beta || 0;
         initialGamma = event.gamma || 0;
         isCalibrated = true;
+        console.log(`Calibration complete: Alpha=${initialAlpha}, Beta=${initialBeta}, Gamma=${initialGamma}`);
     }
 
     let yaw, pitch, roll;
@@ -50,26 +53,20 @@ function handleOrientation(event) {
         }
     }
 
-    // Begrenze Pitch (Hoch-/Runterschauen) dynamisch
-    const maxPitch = Math.PI / 2 - 0.2; // Verhindert Sprünge beim Hochschauen
-    const minPitch = -Math.PI / 2 + 0.2;
+    // Begrenze Pitch (Hoch-/Runterschauen)
+    const maxPitch = Math.PI / 2 - 0.2; // Obergrenze
+    const minPitch = -Math.PI / 2 + 0.2; // Untergrenze
 
-    // Sanftes Clamping: Verhindert abruptes Springen
-    if (pitch > maxPitch) {
-        pitch = maxPitch - 0.05 * (pitch - maxPitch); // Sanfte Abbremsung
-    } else if (pitch < minPitch) {
-        pitch = minPitch + 0.05 * (minPitch - pitch); // Sanfte Abbremsung
-    }
+    // Symmetrische Bewegung: Pitch für Hoch- und Runterschauen begrenzen
+    pitch = Math.max(minPitch, Math.min(maxPitch, pitch));
 
-    // Debugging-Ausgabe
+    // Debugging: Überprüfe die berechneten Werte
     debugOrientation(yaw, pitch, roll);
 
-    // Erstelle eine neue Quaternion basierend auf Yaw, Pitch und Roll
+    // Quaternion für Kamera setzen
     quaternion.setFromEuler(new THREE.Euler(pitch, yaw, -roll, 'YXZ'));
-
-    // Glätte die Quaternion
     smoothQuaternion = applyQuaternionSmoothing(smoothQuaternion, quaternion);
-    camera.quaternion.copy(smoothQuaternion); // Setze die Kamerarotation
+    camera.quaternion.copy(smoothQuaternion);
 }
 
 function init() {
@@ -135,3 +132,4 @@ document.getElementById('startButton').addEventListener('click', () => {
         document.getElementById('startButton').style.display = 'none';
     }
 });
+    
