@@ -45,6 +45,13 @@
         #startButton:hover {
             background-color: #0056b3;
         }
+
+        canvas {
+            display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
     </style>
 </head>
 <body>
@@ -57,10 +64,74 @@
         </div>
         <button id="startButton">Starte die Virtuelle Raumführung</button>
     </div>
-    <script>
+
+    <script type="module">
+        import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.module.js';
+
+        let scene, camera, renderer;
+        let isStarted = false; // Zustandsvariable
+
+        // Funktion zur Initialisierung der 360°-Ansicht
+        function init360() {
+            scene = new THREE.Scene();
+
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 0, 0.1);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.body.appendChild(renderer.domElement);
+
+            const textureLoader = new THREE.TextureLoader();
+            const texture = textureLoader.load('test.jpg', () => {
+                console.log('Texture loaded successfully!');
+            });
+
+            const geometry = new THREE.SphereGeometry(500, 128, 128);
+            geometry.scale(-1, 1, 1);
+
+            const material = new THREE.MeshBasicMaterial({ map: texture });
+            const sphere = new THREE.Mesh(geometry, material);
+            scene.add(sphere);
+
+            window.addEventListener('deviceorientation', handleOrientation);
+
+            animate();
+        }
+
+        // Bewegungskontrolle (Device Orientation)
+        function handleOrientation(event) {
+            if (!camera) return;
+
+            const yaw = THREE.MathUtils.degToRad(event.alpha || 0);
+            const pitch = THREE.MathUtils.degToRad(event.beta || 0) * -1;
+            const roll = THREE.MathUtils.degToRad(event.gamma || 0);
+
+            camera.rotation.set(pitch, yaw, -roll);
+        }
+
+        // Animation
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        // Eventlistener für den Button
         document.getElementById('startButton').addEventListener('click', () => {
-            // Hier kannst du die Funktionalität zum Starten der 360°-Ansicht einfügen.
-            console.log("Virtuelle Raumführung gestartet!");
+            if (!isStarted) {
+                isStarted = true; // Verhindert mehrfachen Start
+                document.querySelector('.container').style.display = 'none'; // Versteckt Instruktionen und Button
+                init360(); // Startet die 360°-Ansicht
+            }
+        });
+
+        // Fenstergröße aktualisieren
+        window.addEventListener('resize', () => {
+            if (camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
         });
     </script>
 </body>
