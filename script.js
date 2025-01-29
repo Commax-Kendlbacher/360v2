@@ -17,11 +17,11 @@ function debugOrientation(pitch) {
 
 function handleOrientation(event) {
     if (!isCalibrated) {
-        // Initiale Quaternion basierend auf Sensorwerten setzen
+        // Kalibriere die Startposition
         const initialEuler = new THREE.Euler(
-            THREE.MathUtils.degToRad(event.beta || 0),
+            THREE.MathUtils.degToRad(clamp(event.beta || 0, -45, 45)), // Beschränke Beta-Winkel
             THREE.MathUtils.degToRad(event.alpha || 0),
-            THREE.MathUtils.degToRad(event.gamma || 0),
+            THREE.MathUtils.degToRad(clamp(event.gamma || 0, -45, 45)), // Beschränke Gamma-Winkel
             'YXZ'
         );
         initialQuaternion.setFromEuler(initialEuler);
@@ -45,8 +45,8 @@ function handleOrientation(event) {
     const relativeEuler = new THREE.Euler().setFromQuaternion(relativeQuaternion, 'YXZ');
 
     // Stabilisiere Pitch
-    const maxPitch = Math.PI / 2 - 0.1; // Obergrenze (fast 90°)
-    const minPitch = -Math.PI / 2 + 0.1; // Untergrenze (fast -90°)
+    const maxPitch = Math.PI / 2 - 0.2; // Obergrenze
+    const minPitch = -Math.PI / 2 + 0.2; // Untergrenze
     const pitch = Math.max(minPitch, Math.min(maxPitch, relativeEuler.x)); // Pitch begrenzen
 
     // Debugging: Überprüfe Pitch-Wert
@@ -58,6 +58,11 @@ function handleOrientation(event) {
     );
     smoothQuaternion = applyQuaternionSmoothing(smoothQuaternion, stabilizedQuaternion);
     camera.quaternion.copy(smoothQuaternion);
+}
+
+// Hilfsfunktion zur Begrenzung von Werten
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
 }
 
 function init() {
