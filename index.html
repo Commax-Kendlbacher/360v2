@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Virtuelle Raumführung</title>
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        .container {
+            background: #ffffff;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            text-align: center;
+        }
+
+        .instructions {
+            font-size: 16px;
+            color: #333333;
+            margin-bottom: 20px;
+        }
+
+        #startButton {
+            background-color: #007BFF;
+            color: #ffffff;
+            font-size: 18px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        #startButton:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="instructions">
+            <strong>Willkommen in Ihrer virtuellen Raumführung!</strong><br>
+            Um die 360°-Ansicht optimal zu erleben, legen Sie Ihr Handy bitte in Querformat. 
+            Bewegen Sie Ihr Gerät, um sich frei im Raum umzusehen. Drücken Sie anschließend 
+            auf den Button <em>Starte die Virtuelle Raumführung</em>, um loszulegen.
+        </div>
+        <button id="startButton">Starte die Virtuelle Raumführung</button>
+    </div>
+    <script>
+        document.getElementById('startButton').addEventListener('click', () => {
+            // Hier kannst du die Funktionalität zum Starten der 360°-Ansicht einfügen.
+            console.log("Virtuelle Raumführung gestartet!");
+        });
+    </script>
+</body>
+</html>
