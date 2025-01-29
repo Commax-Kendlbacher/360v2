@@ -3,6 +3,7 @@ import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.154.0/build/three.m
 let scene, camera, renderer;
 let isCalibrated = false;
 let initialQuaternion = new THREE.Quaternion();
+let currentQuaternion = new THREE.Quaternion();
 let smoothQuaternion = new THREE.Quaternion();
 
 // Funktion zur Quaternion-Glättung
@@ -10,23 +11,27 @@ function applyQuaternionSmoothing(current, target, smoothingFactor = 0.1) {
     return current.slerp(target, smoothingFactor);
 }
 
-// Debugging-Funktion
-function debugOrientation(pitch) {
-    console.log(`Pitch: ${pitch.toFixed(2)} rad`);
+// Hilfsfunktion zur Begrenzung von Werten
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
 }
 
 function handleOrientation(event) {
     if (!isCalibrated) {
-        // Kalibriere die Startposition
+        // Begrenzte Startkalibrierung
+        const clampedBeta = clamp(event.beta || 0, -45, 45); // Begrenze Pitch (hoch/runter)
+        const clampedGamma = clamp(event.gamma || 0, -45, 45); // Begrenze Roll (seitliches Kippen)
+
+        // Initiale Quaternion basierend auf begrenzten Sensorwerten setzen
         const initialEuler = new THREE.Euler(
-            THREE.MathUtils.degToRad(clamp(event.beta || 0, -45, 45)), // Beschränke Beta-Winkel
+            THREE.MathUtils.degToRad(clampedBeta),
             THREE.MathUtils.degToRad(event.alpha || 0),
-            THREE.MathUtils.degToRad(clamp(event.gamma || 0, -45, 45)), // Beschränke Gamma-Winkel
+            THREE.MathUtils.degToRad(clampedGamma),
             'YXZ'
         );
         initialQuaternion.setFromEuler(initialEuler);
         isCalibrated = true;
-        console.log('Calibration complete.');
+        console.log('Initial calibration complete.');
     }
 
     // Aktuelle Quaternion aus den Sensorwerten berechnen
@@ -36,33 +41,16 @@ function handleOrientation(event) {
         THREE.MathUtils.degToRad(event.gamma || 0),
         'YXZ'
     );
-    const currentQuaternion = new THREE.Quaternion().setFromEuler(currentEuler);
+    currentQuaternion.setFromEuler(currentEuler);
 
-    // Relativer Quaternion-Wert
+    // Stabilisierung: Quaternion relativ zur Initialen berechnen
     const relativeQuaternion = initialQuaternion.clone().invert().multiply(currentQuaternion);
 
-    // Euler-Winkel aus relativer Quaternion extrahieren
-    const relativeEuler = new THREE.Euler().setFromQuaternion(relativeQuaternion, 'YXZ');
+    // Bewegung glätten
+    smoothQuaternion = applyQuaternionSmoothing(smoothQuaternion, relativeQuaternion);
 
-    // Stabilisiere Pitch
-    const maxPitch = Math.PI / 2 - 0.2; // Obergrenze
-    const minPitch = -Math.PI / 2 + 0.2; // Untergrenze
-    const pitch = Math.max(minPitch, Math.min(maxPitch, relativeEuler.x)); // Pitch begrenzen
-
-    // Debugging: Überprüfe Pitch-Wert
-    debugOrientation(pitch);
-
-    // Aktualisiere Kamera-Quaternion
-    const stabilizedQuaternion = new THREE.Quaternion().setFromEuler(
-        new THREE.Euler(pitch, relativeEuler.y, relativeEuler.z, 'YXZ')
-    );
-    smoothQuaternion = applyQuaternionSmoothing(smoothQuaternion, stabilizedQuaternion);
+    // Kamera orientieren
     camera.quaternion.copy(smoothQuaternion);
-}
-
-// Hilfsfunktion zur Begrenzung von Werten
-function clamp(value, min, max) {
-    return Math.max(min, Math.min(max, value));
 }
 
 function init() {
