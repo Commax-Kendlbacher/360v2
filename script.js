@@ -21,6 +21,7 @@ function debugOrientation(yaw, pitch, roll) {
 
 function handleOrientation(event) {
     if (!isCalibrated) {
+        // Kalibrierung der Startwerte
         initialAlpha = event.alpha || 0;
         initialBeta = event.beta || 0;
         initialGamma = event.gamma || 0;
@@ -50,16 +51,21 @@ function handleOrientation(event) {
     }
 
     // Begrenze Pitch (Hoch-/Runterschauen) dynamisch
-    const maxPitch = Math.PI / 2 - 0.3; // Verhindere, dass der Pitch zu nah an die obere Grenze kommt
-    const minPitch = -Math.PI / 2 + 0.3;
+    const maxPitch = Math.PI / 2 - 0.2; // Verhindert Sprünge beim Hochschauen
+    const minPitch = -Math.PI / 2 + 0.2;
 
-    const clampedPitch = Math.max(Math.min(pitch, maxPitch), minPitch);
+    // Sanftes Clamping: Verhindert abruptes Springen
+    if (pitch > maxPitch) {
+        pitch = maxPitch - 0.05 * (pitch - maxPitch); // Sanfte Abbremsung
+    } else if (pitch < minPitch) {
+        pitch = minPitch + 0.05 * (minPitch - pitch); // Sanfte Abbremsung
+    }
 
     // Debugging-Ausgabe
-    debugOrientation(yaw, clampedPitch, roll);
+    debugOrientation(yaw, pitch, roll);
 
     // Erstelle eine neue Quaternion basierend auf Yaw, Pitch und Roll
-    quaternion.setFromEuler(new THREE.Euler(clampedPitch, yaw, -roll, 'YXZ'));
+    quaternion.setFromEuler(new THREE.Euler(pitch, yaw, -roll, 'YXZ'));
 
     // Glätte die Quaternion
     smoothQuaternion = applyQuaternionSmoothing(smoothQuaternion, quaternion);
